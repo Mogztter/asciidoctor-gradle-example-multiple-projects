@@ -1,23 +1,13 @@
 import org.kordamp.gradle.livereload.LiveReloadTask
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
 
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'org.kordamp.gradle:livereload-gradle-plugin:0.2.1'
-    }
-}
-
 plugins {
-    id 'org.asciidoctor.jvm.convert' version '3.0.0-alpha.4'
+    id 'org.asciidoctor.jvm.convert' version '3.0.0-alpha.4' apply false
     id 'org.asciidoctor.jvm.pdf' version '3.0.0-alpha.4'
     id 'org.asciidoctor.jvm.revealjs' version '3.0.0-alpha.4'
     id 'org.asciidoctor.jvm.gems' version '3.0.0-alpha.4'
+    id 'org.kordamp.gradle.livereload' version '0.2.1' apply false
 }
-apply plugin: 'org.kordamp.gradle.livereload'
 
 repositories {
     mavenCentral()
@@ -32,10 +22,16 @@ dependencies {
 }
 
 subprojects {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
     asciidoctorj {
         requires 'rouge'
         attributes 'allow-uri-read': '',
                 'source-highlighter': 'rouge'
+        options template_dirs: ["${rootProject.projectDir}/resources/templates"]
     }
 
     revealjs {
@@ -45,17 +41,6 @@ subprojects {
             repository = 'reveal.js'
             tag = '3.7.0'
         }
-    }
-
-    asciidoctor {
-        dependsOn asciidoctorGemsPrepare
-
-        asciidoctorj {
-            options template_dirs: ["${rootProject.projectDir}/resources/templates"]
-        }
-        baseDir file("${projectDir}/docs")
-        sourceDir file("${projectDir}/docs")
-        outputDir file("${projectDir}/build/online")
     }
 
     asciidoctorPdf {
@@ -103,7 +88,7 @@ subprojects {
         docRoot "${projectDir}/build"
     }
 
-    // The following definition throws an exception:
+    // Explicitly register the extension asciidoctorj other we cannot instantiate the task AsciidoctorTask
     //
     // A problem occurred evaluating root project 'training'.
     //> Could not create task ':administration:generateHTML'.
@@ -111,15 +96,18 @@ subprojects {
     //    > Could not create an instance of type org.asciidoctor.gradle.jvm.AsciidoctorJExtension.
     //      > Extension with name 'asciidoctorj' does not exist. Currently registered extension names: [ext]
     //
-    /*
+    project.extensions.add('asciidoctorj', asciidoctorj)
+
     task generateHTML(type: AsciidoctorTask) {
-        asciidoctorj {
-            options template_dirs: ["${rootProject.projectDir}/resources/templates"]
-        }
+        dependsOn asciidoctorGemsPrepare
+
+        // if we declare the extension asciidoctorj in here it does not work!
+        // to reproduce this issue, uncomment the above line:
+        // project.extensions.add('asciidoctorj', asciidoctorj)
+        asciidoctorj {}
         baseDir file("${projectDir}/docs")
         sourceDir file("${projectDir}/docs")
         outputDir file("${projectDir}/build/html")
     }
-    */
 }
 

@@ -1,1 +1,8 @@
 = C
+
+== Code
+
+[source,javascript]
+----
+console.log('hello world')
+----
